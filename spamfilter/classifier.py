@@ -76,7 +76,8 @@ class SpamHamClassifier(object):
         self._probability_ham = len(self.ham_list)/len(self.training_set)
 
     def _compute_likelihood(self, documents):
-        return [sum(z)/len(documents) for z in zip(documents)]
+        mat = zip(*documents)
+        return [sum(r)/len(documents) for r in mat]
 
     def classify(self, document, lambda_constant):
         vector = self._vectorize(document)

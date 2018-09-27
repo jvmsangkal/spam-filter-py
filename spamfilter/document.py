@@ -56,7 +56,7 @@ class Document(object):
                     body = part.get_payload()
                     break
         else:
-            body = b.get_payload(decode=True)
+            body = b.get_payload()
 
         if isinstance(body, bytes):
             body = body.decode('utf-8', errors='ignore')
