@@ -29,7 +29,6 @@ class Document(object):
         self._tokens = self._get_subject_tokens() + self._get_body_tokens()
 
     def _clean_string(self, string):
-        clean_text = re.sub(r'\r(?!\n)', '\r\n', string)
         clean_text = re.sub(r'<.*?>', '', string)
         return clean_text
 
