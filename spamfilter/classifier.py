@@ -1,3 +1,4 @@
+import math
 import operator
 
 
@@ -100,16 +101,16 @@ class SpamHamClassifier(object):
         return 'ham'
 
     def _get_document_probability(self, vector, likelihood_list):
-        res = 1
+        tmp = []
 
         for i, x in enumerate(vector):
             likelihood = likelihood_list[i]
             if x == 0:
                 likelihood = 1 - likelihood
 
-            res *= likelihood
+            tmp.append(math.log10(likelihood))
 
-        return res
+        return 10 ** sum(tmp)
 
     def _compute_bayes(self, p_doc_spam, p_doc_ham, lambda_constant=0):
         return ((p_doc_spam * self.probability_spam) + lambda_constant) / \
