@@ -4,8 +4,7 @@ from spamfilter import SpamHamClassifier
 
 import argparse
 import os
-
-TEST_SET_INDEX = 71
+import time
 
 
 def main(args):
@@ -25,7 +24,7 @@ def main(args):
                 raw_content = document_file.read()
                 document = Document(label, raw_content)
 
-                if folder_index < TEST_SET_INDEX:
+                if folder_index < args.test_index:
                     training_set.append(document)
                 else:
                     test_set.append(document)
@@ -74,6 +73,14 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
+        '--test-index',
+        dest='test_index',
+        type=int,
+        default=71,
+        help='Starting index of testing data'
+    )
+
+    parser.add_argument(
         '--vocabulary-size',
         dest='vocabulary_size',
         type=int,
@@ -90,4 +97,7 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
+
+    start_time = time.time()
     main(args)
+    print("--- %s seconds ---" % (time.time() - start_time))
