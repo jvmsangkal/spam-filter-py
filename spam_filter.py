@@ -29,25 +29,32 @@ def main(args):
                 else:
                     test_set.append(document)
 
+    print('Training data: {}'.format(len(training_set)))
+    print('Test data: {}'.format(len(test_set)))
     print('Constructing vocabulary from top {} words..'.format(
         args.vocabulary_size))
 
-    classifier = SpamHamClassifier(training_set, args.vocabulary_size)
-    print('Total number of training data: {}'.format(
-        len(classifier.training_set)))
+    classifier = SpamHamClassifier(
+        training_set,
+        args.vocabulary_size,
+        args.lambda_constant
+    )
+
     print('Number of Spam documents from training data: {}'.format(
-        len(classifier.spam_list)))
+        classifier.num_spam_documents))
     print('Number of Ham documents from training data: {}'.format(
-        len(classifier.ham_list)))
+        classifier.num_ham_documents))
     print('P(w=S) = {}'.format(classifier.probability_spam))
     print('P(w=H) = {}'.format(classifier.probability_ham))
 
     tp = 0
     fp = 0
     fn = 0
+    print('Running tests..')
     for test in test_set:
-        result = classifier.classify(test, args.lambda_constant)
+        result = classifier.classify(test)
 
+        print('Test label: {}, Result: {}'.format(test.label, result))
         if test.label == 'spam' and result == 'spam':
             tp += 1
         elif test.label == 'ham' and result == 'spam':
@@ -93,7 +100,14 @@ if __name__ == '__main__':
         dest='lambda_constant',
         type=float,
         default=0,
-        help='lambda constant to be used in computing'
+        help='lambda constant to be used, λ = 2.0, 1.0, 0.5, 0.1, 0.005'
+    )
+
+    parser.add_argument(
+        '--allow-stop-words',
+        dest='allow_stop_words',
+        action='store_true',
+        help='flag to allow or disallow stop words when parsing'
     )
 
     args = parser.parse_args()

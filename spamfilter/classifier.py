@@ -1,34 +1,63 @@
+from functools import reduce
+from collections import Counter
 import math
 import operator
 
 
 class SpamHamClassifier(object):
-    def __init__(self, training_set, vocabulary_size):
-        self._training_set = training_set  # list of Documents
-        self._build_vocabulary(vocabulary_size)
+    def __init__(self, training_data, vocabulary_size, lambda_constant=0):
+        self._num_training_data = len(training_data)
+        self._lambda_constant = lambda_constant
 
-        self._ham_list = self._build_documents('ham')
-        self._spam_list = self._build_documents('spam')
+        self._num_ham_documents = 0
+        self._num_spam_documents = 0
+        self._ham_counter = Counter()
+        self._spam_counter = Counter()
+
+        vocabulary = Counter()
+        for data in training_data:
+            counter = Counter(data.tokens)
+            vocabulary.update(counter)
+
+            vectorized = self._vectorize(counter)
+            if data.label == 'ham':
+                self._num_ham_documents += 1
+                self._ham_counter.update(vectorized)
+            elif data.label == 'spam':
+                self._num_spam_documents += 1
+                self._spam_counter.update(vectorized)
+
+        self._vocabulary = vocabulary.most_common(vocabulary_size)
 
         self._compute_prior_probabilities()
-        self._ham_likelihood = self._compute_likelihood(self.ham_list)
-        self._spam_likelihood = self._compute_likelihood(self.spam_list)
 
     @property
-    def training_set(self):
-        return self._training_set
+    def num_training_data(self):
+        return self._num_training_data
+
+    @property
+    def num_spam_documents(self):
+        return self._num_spam_documents
+
+    @property
+    def num_ham_documents(self):
+        return self._num_ham_documents
+
+    @property
+    def lambda_constant(self):
+        return self._lambda_constant
 
     @property
     def vocabulary(self):
         return self._vocabulary
 
     @property
-    def spam_list(self):
-        return self._spam_list
+    def spam_counter(self):
+        return self._spam_counter
 
     @property
-    def ham_list(self):
-        return self._ham_list
+    def ham_counter(self):
+        return self._ham_counter
 
     @property
     def probability_spam(self):
@@ -38,82 +67,58 @@ class SpamHamClassifier(object):
     def probability_ham(self):
         return self._probability_ham
 
-    @property
-    def spam_likelihood(self):
-        return self._spam_likelihood
-
-    @property
-    def ham_likelihood(self):
-        return self._ham_likelihood
-
-    def _build_vocabulary(self, vocabulary_size):
-        dictionary = {}
-
-        for data in self.training_set:
-            for token in data.tokens:
-                if token in dictionary:
-                    dictionary[token] += 1
-                else:
-                    dictionary[token] = 1
-
-        sorted_dictionary = sorted(
-            dictionary.items(),
-            key=operator.itemgetter(1),
-            reverse=True
-        )[:vocabulary_size]
-
-        self._vocabulary = [w[0] for w in sorted_dictionary]
-
-    def _build_documents(self, label):
-        return [self._vectorize(d)
-                for d in self.training_set if d.label == label]
-
-    def _vectorize(self, document):
-        return [1 if v in document.tokens else 0
-                for v in self.vocabulary]
+    def _vectorize(self, counter):
+        return Counter({x: 1 for x in counter})
 
     def _compute_prior_probabilities(self):
-        self._probability_spam = len(self.spam_list)/len(self.training_set)
-        self._probability_ham = len(self.ham_list)/len(self.training_set)
+        self._probability_spam = self.num_spam_documents / \
+            self.num_training_data
+        self._probability_ham = self.num_ham_documents / \
+            self.num_training_data
 
-    def _compute_likelihood(self, documents):
-        mat = zip(*documents)
-        return [sum(r)/len(documents) for r in mat]
+    def classify(self, document):
+        vector = self._vectorize(document.tokens)
 
-    def classify(self, document, lambda_constant):
-        vector = self._vectorize(document)
-
-        probability_document_spam = self._get_document_probability(
-            vector, self.spam_likelihood)
-
-        probability_document_ham = self._get_document_probability(
-            vector, self.ham_likelihood)
-
-        probability_spam_document = self._compute_bayes(
-            probability_document_spam,
-            probability_document_ham,
-            lambda_constant
+        document_likelihood_spam = self._compute_likelihood(
+            vector,
+            self.num_spam_documents,
+            self.spam_counter
+        )
+        document_likelihood_ham = self._compute_likelihood(
+            vector,
+            self.num_ham_documents,
+            self.ham_counter
         )
 
-        if probability_spam_document > 0.5:
-            return 'spam'
+        probability_ham_document = self._compute_bayes(
+            document_likelihood_ham,
+            document_likelihood_spam
+        )
 
-        return 'ham'
+        if probability_ham_document > 0.5:
+            return 'ham'
 
-    def _get_document_probability(self, vector, likelihood_list):
+        return 'spam'
+
+    def _compute_likelihood(self, document, label_total, labelled_counter):
         tmp = []
 
-        for i, x in enumerate(vector):
-            likelihood = likelihood_list[i]
-            if x == 0:
-                likelihood = 1 - likelihood
+        for word in self.vocabulary:
+            count = labelled_counter[word]
+            if word not in document:
+                count = label_total - labelled_counter[word]
 
-            tmp.append(math.log10(likelihood))
+            tmp.append(
+                math.log10(
+                    (count + self.lambda_constant) /
+                    (label_total +
+                     (self.lambda_constant * len(self.vocabulary)))
+                )
+            )
 
         return 10 ** sum(tmp)
 
-    def _compute_bayes(self, p_doc_spam, p_doc_ham, lambda_constant=0):
-        return ((p_doc_spam * self.probability_spam) + lambda_constant) / \
-            ((p_doc_spam * self.probability_spam) +
-             (p_doc_ham * self.probability_ham) +
-             (lambda_constant * len(self.vocabulary)))
+    def _compute_bayes(self, ham_likelihood, spam_likelihood):
+        return ((ham_likelihood * self.probability_ham)) / \
+            ((ham_likelihood * self.probability_ham) +
+             (spam_likelihood * self.probability_spam))
