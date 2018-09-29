@@ -3,7 +3,11 @@
 Results:
 
 Vocabulary Size: 10000
+
 lambda = 0
+    Precision: 0.6739498850018157
+    Recall: 1.0
+
 lambda = 2
 lambda = 1
 lambda = 0.5

@@ -1,12 +1,12 @@
 import re
-import email
+import mailparser
 
 
 class Document(object):
-    def __init__(self, label, raw_content):
+    def __init__(self, label, raw_file):
         self._label = label
-        self._raw_content = raw_content
-        self._message = email.message_from_string(self._raw_content)
+        self._raw_file = raw_file
+        self._message = mailparser.parse_from_string(self.raw_file.read())
         self._get_tokens()
 
     @property
@@ -14,8 +14,8 @@ class Document(object):
         return self._label
 
     @property
-    def raw_content(self):
-        return self._raw_content
+    def raw_file(self):
+        return self._raw_file
 
     @property
     def message(self):
@@ -39,31 +39,18 @@ class Document(object):
         return re.findall(r'[a-zA-Z]+', string)
 
     def _get_body_tokens(self):
-        b = self.message
-        body = ''
+        tokens = []
 
-        if b.is_multipart():
-            for part in b.walk():
+        for text in self.message.text_plain:
+            tokens += self._find_match(self._clean_string(text.lower()))
 
-                ctype = part.get_content_type()
-                cdispo = str(part.get('Content-Disposition'))
+        for text in self.message.text_html:
+            self._find_match(self._clean_string(text.lower()))
 
-                if part.get_filename():
-                    continue
-
-                if ctype == 'text/plain' and 'attachment' not in cdispo:
-                    body = part.get_payload()
-                    break
-        else:
-            body = b.get_payload(decode=True)
-
-        if isinstance(body, bytes):
-            body = body.decode('utf-8', errors='ignore')
-
-        body = body.lower()
-        body = self._clean_string(body)
-
-        return self._find_match(body)
+        return tokens
 
     def _get_subject_tokens(self):
-        return self._find_match(self.message.get('subject'))
+        subject = self.message.subject.lower()
+        subject = self._clean_string(subject)
+
+        return self._find_match(subject)

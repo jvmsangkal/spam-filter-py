@@ -20,9 +20,9 @@ def main(args):
             folder_index = int(document_path.split('/')[2])
             document_path = os.path.join(data_dir, document_path)
 
-            with open(document_path, encoding='latin-1') as document_file:
-                raw_content = document_file.read()
-                document = Document(label, raw_content)
+            with open(
+                 document_path, encoding='utf-8', errors='ignore') as raw_file:
+                document = Document(label, raw_file)
 
                 if folder_index < args.test_index:
                     training_set.append(document)
