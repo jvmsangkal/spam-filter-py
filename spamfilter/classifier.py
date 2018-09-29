@@ -2,12 +2,15 @@ from functools import reduce
 from collections import Counter
 import math
 import operator
+import pprint
 
 
 class SpamHamClassifier(object):
     def __init__(self, training_data, vocabulary_size, lambda_constant=0):
         self._num_training_data = len(training_data)
         self._lambda_constant = lambda_constant
+
+        self.pp = pprint.PrettyPrinter(indent=4)
 
         self._num_ham_documents = 0
         self._num_spam_documents = 0
@@ -28,7 +31,7 @@ class SpamHamClassifier(object):
                 self._spam_counter.update(vectorized)
 
         self._vocabulary = vocabulary.most_common(vocabulary_size)
-
+        self.pp.pprint(vocabulary)
         self._compute_prior_probabilities()
 
     @property
@@ -105,7 +108,7 @@ class SpamHamClassifier(object):
 
         for word in self.vocabulary:
             count = labelled_counter[word]
-            if word not in document:
+            if not document[word]:
                 count = label_total - labelled_counter[word]
 
             tmp.append(

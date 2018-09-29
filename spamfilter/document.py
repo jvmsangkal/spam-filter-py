@@ -1,13 +1,19 @@
+from nltk.corpus import stopwords
+
 import re
-import mailparser
+import email
+import base64
+import quopri
 
 
 class Document(object):
-    def __init__(self, label, raw_file):
+    def __init__(self, label, raw_file, remove_stop_words):
         self._label = label
         self._raw_file = raw_file
-        self._message = mailparser.parse_from_string(self.raw_file.read())
-        self._get_tokens()
+
+        self._message = email.message_from_file(raw_file)
+
+        self._get_tokens(remove_stop_words)
 
     @property
     def label(self):
@@ -25,8 +31,14 @@ class Document(object):
     def tokens(self):
         return self._tokens
 
-    def _get_tokens(self):
-        self._tokens = self._get_subject_tokens() + self._get_body_tokens()
+    def _get_tokens(self, remove_stop_words):
+        tokens = self._get_subject_tokens() + self._get_body_tokens()
+
+        stop_words = []
+        if remove_stop_words:
+            stop_words = set(stopwords.words('english'))
+
+        self._tokens = [token for token in tokens if token not in stop_words]
 
     def _clean_string(self, string):
         clean_text = re.sub(r'<.*?>', '', string)
@@ -36,21 +48,54 @@ class Document(object):
         if not string:
             return []
 
-        return re.findall(r'[a-zA-Z]+', string)
+        return re.findall(r'[a-zA-Z]{2,}', string)
 
     def _get_body_tokens(self):
+        payloads = self._get_payloads(self.message)
+
         tokens = []
-
-        for text in self.message.text_plain:
-            tokens += self._find_match(self._clean_string(text.lower()))
-
-        for text in self.message.text_html:
-            self._find_match(self._clean_string(text.lower()))
+        for payload in payloads:
+            tokens += self._find_match(self._clean_string(payload.lower()))
 
         return tokens
 
+    def _get_payloads(self, message):
+        payloads = []
+
+        if message.is_multipart():
+            for part in message.walk():
+                sub_part_payload = part.get_payload()
+                if isinstance(sub_part_payload, list):
+                    for s in sub_part_payload:
+                        payloads += self._get_payloads(s)
+                else:
+                    self._get_payloads(part)
+        else:
+            content_type = message.get_content_type().lower()
+            transfer_encoding = message.get(
+                'content-transfer-encoding', '').lower()
+
+            if 'text' in content_type:
+                s = message.get_payload().strip()
+
+                if transfer_encoding == 'base64' and ' ' not in s:
+                    s = base64.b64decode(s).decode('latin-1')
+
+                if transfer_encoding == 'quoted-printable':
+                    s = s.encode('ascii', errors='ignore').decode()
+                    s = quopri.decodestring(s).decode('latin-1')
+
+                payloads.append(s)
+
+        return payloads
+
     def _get_subject_tokens(self):
-        subject = self.message.subject.lower()
+        subject = self.message.get('subject')
+
+        if not subject:
+            return []
+
+        subject = self.message.get('subject').lower()
         subject = self._clean_string(subject)
 
         return self._find_match(subject)

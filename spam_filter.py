@@ -2,12 +2,15 @@
 from spamfilter import Document
 from spamfilter import SpamHamClassifier
 
-import argparse
 import os
+import nltk
 import time
+import argparse
 
 
 def main(args):
+    nltk.download('stopwords')
+
     training_set = []
     test_set = []
 
@@ -21,8 +24,8 @@ def main(args):
             document_path = os.path.join(data_dir, document_path)
 
             with open(
-                 document_path, encoding='utf-8', errors='ignore') as raw_file:
-                document = Document(label, raw_file)
+                 document_path, encoding='latin-1') as raw_file:
+                document = Document(label, raw_file, args.remove_stop_words)
 
                 if folder_index < args.test_index:
                     training_set.append(document)
@@ -104,8 +107,8 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        '--allow-stop-words',
-        dest='allow_stop_words',
+        '--remove-stop-words',
+        dest='remove_stop_words',
         action='store_true',
         help='flag to allow or disallow stop words when parsing'
     )
