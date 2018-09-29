@@ -30,8 +30,9 @@ class SpamHamClassifier(object):
                 self._num_spam_documents += 1
                 self._spam_counter.update(vectorized)
 
-        self._vocabulary = vocabulary.most_common(vocabulary_size)
-        self.pp.pprint(vocabulary)
+        self._vocabulary = [v[0]
+                            for v in vocabulary.most_common(vocabulary_size)]
+        self.pp.pprint(self._vocabulary)
         self._compute_prior_probabilities()
 
     @property
@@ -93,10 +94,15 @@ class SpamHamClassifier(object):
             self.ham_counter
         )
 
-        probability_ham_document = self._compute_bayes(
-            document_likelihood_ham,
-            document_likelihood_spam
-        )
+        probability_ham_document = 0
+        try:
+            probability_ham_document = self._compute_bayes(
+                document_likelihood_ham,
+                document_likelihood_spam
+            )
+        except Exception as e:
+            print(vector)
+            raise e
 
         if probability_ham_document > 0.5:
             return 'ham'
@@ -111,13 +117,14 @@ class SpamHamClassifier(object):
             if not document[word]:
                 count = label_total - labelled_counter[word]
 
-            tmp.append(
-                math.log10(
-                    (count + self.lambda_constant) /
-                    (label_total +
-                     (self.lambda_constant * len(self.vocabulary)))
-                )
-            )
+            likelihood = ((count + self.lambda_constant) /
+                          (label_total +
+                          (self.lambda_constant * len(self.vocabulary))))
+
+            if not likelihood:
+                return 0
+
+            tmp.append(math.log10(likelihood))
 
         return 10 ** sum(tmp)
 

@@ -48,7 +48,9 @@ class Document(object):
         if not string:
             return []
 
-        return re.findall(r'[a-zA-Z]{2,}', string)
+        s = re.split(r'\s|\,|\.', string)
+        r = re.compile(r'^[a-zA-Z]{2,}$')
+        return list(filter(r.match, s))
 
     def _get_body_tokens(self):
         payloads = self._get_payloads(self.message)
@@ -72,10 +74,12 @@ class Document(object):
                     self._get_payloads(part)
         else:
             content_type = message.get_content_type().lower()
+            content_disposition = str(message.get('Content-Disposition'))
             transfer_encoding = message.get(
                 'content-transfer-encoding', '').lower()
 
-            if 'text' in content_type:
+            if 'text' in content_type and \
+               'attachment' not in content_disposition:
                 s = message.get_payload().strip()
 
                 if transfer_encoding == 'base64' and ' ' not in s:
