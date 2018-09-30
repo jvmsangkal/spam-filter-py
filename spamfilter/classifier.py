@@ -112,10 +112,6 @@ class SpamHamClassifier(object):
             if not document[word]:
                 count = label_total - labelled_counter[word]
 
-            likelihood = ((count + self.lambda_constant) /
-                          (label_total +
-                          (self.lambda_constant * len(self.vocabulary))))
-
             likelihood = np.divide(
                 np.add(count, self.lambda_constant),
                 np.add(
