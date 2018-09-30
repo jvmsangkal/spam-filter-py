@@ -73,7 +73,8 @@ class Document(object):
                     for s in sub_part_payload:
                         payloads += self._get_payloads(s)
                 else:
-                    self._get_payloads(part)
+                    payloads += self._get_payloads(part)
+
         else:
             content_type = message.get_content_type().lower()
             content_disposition = str(message.get('Content-Disposition'))
