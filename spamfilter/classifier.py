@@ -97,7 +97,6 @@ class SpamHamClassifier(object):
         )
         print(document_likelihood_spam)
         print(document_likelihood_ham)
-        print(self.lambda_constant)
 
         probability_ham_document = 0
         try:
@@ -126,13 +125,7 @@ class SpamHamClassifier(object):
             #               (label_total +
             #               (self.lambda_constant * len(self.vocabulary))))
 
-            likelihood = np.divide(
-                np.add(count, self.lambda_constant),
-                np.add(
-                    label_total,
-                    np.multiply(self.lambda_constant, len(self.vocabulary))
-                )
-            )
+            likelihood = np.divide(count, label_total)
 
             if likelihood == 0:
                 return 0.0
@@ -147,9 +140,15 @@ class SpamHamClassifier(object):
         #      (spam_likelihood * self.probability_spam))
 
         return np.divide(
-            np.multiply(ham_likelihood, self.probability_ham),
             np.add(
                 np.multiply(ham_likelihood, self.probability_ham),
-                np.multiply(spam_likelihood, self.probability_spam)
+                self.lambda_constant
+            ),
+            np.add(
+                np.add(
+                    np.multiply(ham_likelihood, self.probability_ham),
+                    np.multiply(spam_likelihood, self.probability_spam)
+                ),
+                np.multiply(self.lambda_constant, len(self.vocabulary))
             )
         )
