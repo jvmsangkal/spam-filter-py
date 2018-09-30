@@ -49,7 +49,7 @@ class Document(object):
             return []
 
         s = re.split(r'\s', string)
-        r = re.compile(r'^[a-zA-Z]+[\.\,]?$')
+        r = re.compile(r'^[a-zA-Z]{2,}[\.\,]?$')
 
         matches = list(filter(r.match, s))
         return [re.sub(r'\,|\.', '', m) for m in matches]

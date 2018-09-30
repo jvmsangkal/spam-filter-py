@@ -43,6 +43,8 @@ def main(args):
         args.lambda_constant
     )
 
+    print('Vocabulary: {}'.format(', '.join(classifier.vocabulary)))
+
     print('Number of Spam documents from training data: {}'.format(
         classifier.num_spam_documents))
     print('Number of Ham documents from training data: {}'.format(

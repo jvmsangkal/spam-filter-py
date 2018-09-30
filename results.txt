@@ -5,19 +5,23 @@ Results:
 Vocabulary Size: 10000
 
 lambda = 0
+    Precision: 0.9151157894736842
+    Recall: 0.9759317467444993
+lambda = 2
     Precision: 0.6739498850018157
     Recall: 1.0
-
-lambda = 2
 lambda = 1
+    Precision: 0.6739498850018157
+    Recall: 1.0
 lambda = 0.5
+    Precision: 0.6739498850018157
+    Recall: 1.0
 lambda = 0.1
+    Precision: 0.9151157894736842
+    Recall: 0.9759317467444993
 lambda = 0.005
+    Precision: 0.9151014907773941
+    Recall: 0.9757521329142343
 
-Vocabulary Size: 200
+Vocabulary Size: 200 remove stop words
 lambda = 0
-lambda = 2
-lambda = 1
-lambda = 0.5
-lambda = 0.1
-lambda = 0.005
