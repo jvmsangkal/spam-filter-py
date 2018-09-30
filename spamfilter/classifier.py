@@ -3,6 +3,7 @@ from collections import Counter
 import math
 import operator
 import pprint
+import numpy as np
 
 
 class SpamHamClassifier(object):
@@ -88,11 +89,15 @@ class SpamHamClassifier(object):
             self.num_spam_documents,
             self.spam_counter
         )
+
         document_likelihood_ham = self._compute_likelihood(
             vector,
             self.num_ham_documents,
             self.ham_counter
         )
+        print(document_likelihood_spam)
+        print(document_likelihood_ham)
+        print(self.lambda_constant)
 
         probability_ham_document = 0
         try:
@@ -110,25 +115,41 @@ class SpamHamClassifier(object):
         return 'spam'
 
     def _compute_likelihood(self, document, label_total, labelled_counter):
-        tmp = []
+        tmp = 0
 
         for word in self.vocabulary:
             count = labelled_counter[word]
             if not document[word]:
                 count = label_total - labelled_counter[word]
 
-            likelihood = ((count + self.lambda_constant) /
-                          (label_total +
-                          (self.lambda_constant * len(self.vocabulary))))
+            # likelihood = ((count + self.lambda_constant) /
+            #               (label_total +
+            #               (self.lambda_constant * len(self.vocabulary))))
 
-            if not likelihood:
-                return 0
+            likelihood = np.divide(
+                np.add(count, self.lambda_constant),
+                np.add(
+                    label_total,
+                    np.multiply(self.lambda_constant, len(self.vocabulary))
+                )
+            )
 
-            tmp.append(math.log10(likelihood))
+            if likelihood == 0:
+                return 0.0
 
-        return 10 ** sum(tmp)
+            tmp = np.logaddexp(tmp, np.log(likelihood))
+
+        return np.exp(tmp)
 
     def _compute_bayes(self, ham_likelihood, spam_likelihood):
-        return ((ham_likelihood * self.probability_ham)) / \
-            ((ham_likelihood * self.probability_ham) +
-             (spam_likelihood * self.probability_spam))
+        # return ((ham_likelihood * self.probability_ham)) / \
+        #     ((ham_likelihood * self.probability_ham) +
+        #      (spam_likelihood * self.probability_spam))
+
+        return np.divide(
+            np.multiply(ham_likelihood, self.probability_ham),
+            np.add(
+                np.multiply(ham_likelihood, self.probability_ham),
+                np.multiply(spam_likelihood, self.probability_spam)
+            )
+        )

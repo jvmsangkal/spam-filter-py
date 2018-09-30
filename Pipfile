@@ -9,6 +9,7 @@ pylint = "*"
 "autopep8" = "*"
 mail-parser = "*"
 nltk = "*"
+numpy = "*"
 
 [dev-packages]
 

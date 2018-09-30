@@ -41,16 +41,18 @@ class Document(object):
         self._tokens = [token for token in tokens if token not in stop_words]
 
     def _clean_string(self, string):
-        clean_text = re.sub(r'<.*?>', '', string)
+        clean_text = re.sub(r'<.*?>', ' ', string)
         return clean_text
 
     def _find_match(self, string):
         if not string:
             return []
 
-        s = re.split(r'\s|\,|\.', string)
-        r = re.compile(r'^[a-zA-Z]{2,}$')
-        return list(filter(r.match, s))
+        s = re.split(r'\s', string)
+        r = re.compile(r'^[a-zA-Z]+[\.\,]?$')
+
+        matches = list(filter(r.match, s))
+        return [re.sub(r'\,|\.', '', m) for m in matches]
 
     def _get_body_tokens(self):
         payloads = self._get_payloads(self.message)
