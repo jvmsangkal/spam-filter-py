@@ -107,7 +107,11 @@ class SpamHamClassifier(object):
     def _compute_likelihood(self, document, label_total, labelled_counter):
         tmp = []
 
-        for word in self.vocabulary:
+        vocabulary = self.vocabulary
+        if self.lambda_constant:
+            vocabulary = set(self.vocabulary + list(document.keys()))
+
+        for word in vocabulary:
             count = labelled_counter[word]
             if not document[word]:
                 count = label_total - labelled_counter[word]
