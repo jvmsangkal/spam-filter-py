@@ -25,7 +25,13 @@ def main(args):
 
             with open(
                  document_path, encoding='latin-1') as raw_file:
-                document = Document(label, raw_file, args.remove_stop_words)
+                document = Document(
+                    label,
+                    raw_file,
+                    args.stop_words,
+                    args.stem,
+                    args.gram
+                )
 
                 if folder_index < args.test_index:
                     training_set.append(document)
@@ -40,6 +46,7 @@ def main(args):
     classifier = SpamHamClassifier(
         training_set,
         args.vocabulary_size,
+        args.compute_mutual_information,
         args.lambda_constant
     )
 
@@ -59,7 +66,6 @@ def main(args):
     for test in test_set:
         result = classifier.classify(test)
 
-        print('Test label: {}, Result: {}'.format(test.label, result))
         if test.label == 'spam' and result == 'spam':
             tp += 1
         elif test.label == 'ham' and result == 'spam':
@@ -109,10 +115,32 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        '--remove-stop-words',
-        dest='remove_stop_words',
+        '--stop-words',
+        dest='stop_words',
         action='store_true',
         help='flag to allow or disallow stop words when parsing'
+    )
+
+    parser.add_argument(
+        '--stem',
+        dest='stem',
+        action='store_true',
+        help="flag to use NLTK's PorterStemmer"
+    )
+
+    parser.add_argument(
+        '--gram',
+        dest='gram',
+        type=int,
+        default=1,
+        help='n-gram'
+    )
+
+    parser.add_argument(
+        '--compute-mutual-information',
+        dest='compute_mutual_information',
+        action='store_true',
+        help='Flag if mutual information is computed on getting V'
     )
 
     args = parser.parse_args()

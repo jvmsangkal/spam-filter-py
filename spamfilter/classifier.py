@@ -7,7 +7,8 @@ import numpy as np
 
 
 class SpamHamClassifier(object):
-    def __init__(self, training_data, vocabulary_size, lambda_constant=0):
+    def __init__(self, training_data, vocabulary_size,
+                 compute_mutual_information, lambda_constant=0):
         self._num_training_data = len(training_data)
         self._lambda_constant = lambda_constant
 
@@ -29,16 +30,82 @@ class SpamHamClassifier(object):
                 self._num_spam_documents += 1
                 self._spam_counter.update(vectorized)
 
-        self._vocabulary = [v[0]
-                            for v in vocabulary.most_common(vocabulary_size)]
-        self._probability_spam = np.divide(
-            self.num_spam_documents,
-            self.num_training_data
-        )
         self._probability_ham = np.divide(
             self.num_ham_documents,
             self.num_training_data
         )
+
+        self._probability_spam = np.divide(
+            self.num_spam_documents,
+            self.num_training_data
+        )
+
+        if compute_mutual_information:
+            word_mi = {}
+
+            for word, frequency in vocabulary.items():
+                pwordspam = self.spam_counter[word] / len(training_data)
+                pwordham = self.ham_counter[word] / len(training_data)
+                pnotwordspam = (len(training_data) - self.spam_counter[word]) / len(training_data)
+                pnotwordham = (len(training_data) - self.ham_counter[word]) / len(training_data)
+                pword = frequency / len(training_data)
+                pnotword = (len(training_data) - frequency) / len(training_data)
+                mi = np.sum([
+                    np.multiply(
+                        pwordham,
+                        np.log(
+                            np.divide(
+                                pwordham,
+                                np.multiply(pword, self.probability_ham)
+                            )
+                        )
+                    ),
+                    np.multiply(
+                        pwordspam,
+                        np.log(
+                            np.divide(
+                                pwordspam,
+                                np.multiply(pword, self.probability_spam)
+                            )
+                        )
+                    ),
+                    np.multiply(
+                        pnotwordham,
+                        np.log(
+                            np.divide(
+                                pnotwordspam,
+                                np.multiply(pnotword, self.probability_ham)
+                            )
+                        )
+                    ),
+                    np.multiply(
+                        pnotwordspam,
+                        np.log(
+                            np.divide(
+                                pnotwordspam,
+                                np.multiply(pnotword, self.probability_spam)
+                            )
+                        )
+                    )
+                ])
+
+                word_mi[word] = mi
+
+            word_mi = sorted(
+                        word_mi.items(), key=lambda kv: kv[1], reverse=True)
+            vocabulary = word_mi[:vocabulary_size]
+        else:
+            vocabulary = vocabulary.most_common(vocabulary_size)
+
+        self._vocabulary = [v[0]
+                            for v in vocabulary]
+
+        self._ham_counter = Counter({
+            k: v for k, v in self.ham_counter.items() if k in self.vocabulary
+        })
+        self._spam_counter = Counter({
+            k: v for k, v in self.spam_counter.items() if k in self.vocabulary
+        })
 
     @property
     def num_training_data(self):
@@ -99,7 +166,7 @@ class SpamHamClassifier(object):
             document_likelihood_spam
         )
 
-        if probability_ham_document > 0.5:
+        if probability_ham_document >= 0.5:
             return 'ham'
 
         return 'spam'
@@ -109,7 +176,7 @@ class SpamHamClassifier(object):
 
         vocabulary = self.vocabulary
         if self.lambda_constant:
-            vocabulary = set(self.vocabulary + list(document.keys()))
+            vocabulary = list(document.keys())
 
         for word in vocabulary:
             count = labelled_counter[word]
@@ -129,7 +196,7 @@ class SpamHamClassifier(object):
 
             tmp.append(np.log(likelihood))
 
-        return np.exp(np.sum(tmp))
+        return np.exp(np.sum(tmp), dtype=np.float128)
 
     def _compute_bayes(self, ham_likelihood, spam_likelihood):
         return np.divide(

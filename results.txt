@@ -5,23 +5,25 @@ Results:
 Vocabulary Size: 10000
 
 lambda = 0
-    Precision: 0.9151157894736842
-    Recall: 0.9759317467444993
+    Precision: 0.9166596015260704
+    Recall: 0.9709923664122138
 lambda = 2
-    Precision: 0.6739498850018157
-    Recall: 1.0
+    Precision: 0.9871549079754601
+    Recall: 0.9248316120341267
 lambda = 1
-    Precision: 0.6739498850018157
-    Recall: 1.0
+    Precision: 0.9903145282076885
+    Recall: 0.8907049842837899
 lambda = 0.5
-    Precision: 0.6739498850018157
-    Recall: 1.0
+    Precision: 0.9934897178877752
+    Recall: 0.8634036820835205
 lambda = 0.1
-    Precision: 0.9151157894736842
-    Recall: 0.9759317467444993
+    Precision: 0.9947503749732162
+    Recall: 0.8338572070049394
 lambda = 0.005
-    Precision: 0.9151014907773941
-    Recall: 0.9757521329142343
+    Precision: 0.994755993150685
+    Recall: 0.834755276156264
 
-Vocabulary Size: 200 remove stop words
-lambda = 0
+Vocabulary Size: 200 most important words
+lambda = 0.005
+    Precision: 0.9804305283757339
+    Recall: 0.22496632240682532

@@ -1,4 +1,5 @@
 from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
 
 import re
 import email
@@ -7,13 +8,13 @@ import quopri
 
 
 class Document(object):
-    def __init__(self, label, raw_file, remove_stop_words):
+    def __init__(self, label, raw_file, stop_words, stem, gram):
         self._label = label
         self._raw_file = raw_file
 
         self._message = email.message_from_file(raw_file)
 
-        self._get_tokens(remove_stop_words)
+        self._get_tokens(stop_words, stem, gram)
 
     @property
     def label(self):
@@ -31,14 +32,26 @@ class Document(object):
     def tokens(self):
         return self._tokens
 
-    def _get_tokens(self, remove_stop_words):
+    def _get_tokens(self, stop_words, stem, gram):
         tokens = self._get_subject_tokens() + self._get_body_tokens()
 
-        stop_words = []
-        if remove_stop_words:
-            stop_words = set(stopwords.words('english'))
+        if gram > 1:
+            t = []
+            for i in range(len(tokens) - gram + 1):
+                t += [' '.join(tokens[i:i + gram])]
 
-        self._tokens = [token for token in tokens if token not in stop_words]
+            self._tokens = t
+            return
+
+        if stop_words:
+            stop_words = stopwords.words('english')
+            tokens = [token for token in tokens if token not in stop_words]
+
+        if stem:
+            stemmer = PorterStemmer()
+            tokens = [stemmer.stem(token) for token in tokens]
+
+        self._tokens = tokens
 
     def _clean_string(self, string):
         clean_text = re.sub(r'<.*?>', ' ', string)
@@ -49,7 +62,7 @@ class Document(object):
             return []
 
         s = re.split(r'\s', string)
-        r = re.compile(r'^[a-zA-Z]{2,}[\.\,]?$')
+        r = re.compile(r'^[a-zA-Z]+[\.\,]?$')
 
         matches = list(filter(r.match, s))
         return [re.sub(r'\,|\.', '', m) for m in matches]
